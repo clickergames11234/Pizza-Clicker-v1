@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PizzaClicker0Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+            overflow: hidden;
+            position: relative;
+        }
+        .header {
+            position: absolute;
+            top: 20px;
+            font-size: 36px;
+            font-weight: bold;
+            color: #ff5722;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            width: 800px;
+        }
+        .upgrades {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 300px;
+            margin-left: 20px;
+        }
+        .upgrade {
+            padding: 20px;
+            background-color: #ddd;
+            border-radius: 10px;
+            margin: 15px 0; /* Increased margin for spacing */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative; /* To position the tooltip */
+        }
+        .active {
+            background-color: #4caf50;
+            color: white;
+        }
+        .tooltip {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 5px;
+            border-radius: 5px;
+            display: none; /* Hidden by default */
+            white-space: nowrap;
+            z-index: 10;
+        }
+        .pizza-area {
+            cursor: pointer;
+            text-align: center;
+            flex: 1;
+            margin-left: 40px;
+        }
+        .pizza-area img {
+            width: 300px;
+            height: auto;
+            border-radius: 15px;
+        }
+        .progress-container {
+            width: 300px; /* Adjusted width */
+            height: 20px;
+            background-color: #ddd;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #4caf50;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .floating-pizza {
+            position: absolute;
+            width: 50px;
+            transition: transform 0.5s;
+        }
+        .celebration {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: #ff5722;
+            display: none;
+        }
+        .battle-star-box {
+            position: absolute;
+            right: 20px;
+            top: 100px;
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            display: none; /* Initially hidden */
+        }
+        .battle-star-toggle {
+            cursor: pointer;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">PizzaClicker0Game</div>
+    <div class="celebration" id="celebrationMessage">Level Up!</div>
+    <div class="container">
+        <div class="upgrades">
+            <h3>Upgrades</h3>
+            <div id="autoClickerDiv" class="upgrade" onclick="buyAutoClicker()"
+                 onmouseover="showTooltip(event, 'Automatically adds slices to your total every second.')" onmouseout="hideTooltip()">
+                Auto Clicker Cost: <span id="autoClickerCost">100</span> | Owned: <span id="autoClickerCount">0</span> | Multiplier: <span id="autoClickerMultiplier">1</span>x
+                <div class="tooltip">Automatically adds slices to your total every second.</div>
+            </div>
+            <div id="pizzeriaDiv" class="upgrade" onclick="buyPizzeria()"
+                 onmouseover="showTooltip(event, 'Increases your slice count per click.')" onmouseout="hideTooltip()">
+                Pizzeria Cost: <span id="pizzeriaCost">1000</span> | Owned: <span id="pizzeriaCount">0</span> | Multiplier: <span id="pizzeriaMultiplier">1</span>x
+                <div class="tooltip">Increases your slice count per click.</div>
+            </div>
+            <div id="doubleClickDiv" class="upgrade" onclick="buyDoubleClick()"
+                 onmouseover="showTooltip(event, 'Doubles the slices you get from each click.')" onmouseout="hideTooltip()">
+                Double Clicks Cost: <span id="doubleClickCost">1500</span> | Owned: <span id="doubleClickCount">0</span> | Multiplier: <span id="doubleClickMultiplier">1</span>x
+                <div class="tooltip">Doubles the slices you get from each click.</div>
+            </div>
+            <div id="battleStarDiv" class="upgrade">
+                Battle Stars: <span id="battleStarCount">0</span>
+                <div class="tooltip">Earn battle stars for leveling up and use them for upgrades.</div>
+            </div>
+        </div>
+        <div class="pizza-area" id="pizza" onclick="clickPizza()">
+            <img src="pizza.png" alt="Pizza" />
+            <h2>Slices: <span id="sliceCount">0</span></h2>
+            <div class="progress-container">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="battle-star-box" id="battleStarBox">
+        <h4>Battle Star Upgrades</h4>
+        <div class="battle-star-toggle" onclick="toggleBattleStarBox()">Toggle Battle Star Upgrades</div>
+        <div class="upgrade" onclick="buyBattleStarSpeedUpgrade()">
+            Increase Progress Bar Speed | Cost: 1 Star
+        </div>
+    </div>
+
+    <script>
+        let sliceCount = 0;
+        let autoClickers = 0;
+        let pizzeriaCount = 0;
+        let doubleClickCount = 0;
+        let battleStars = 0;
+        let autoClickerCost = 100;
+        let pizzeriaCost = 1000;
+        let doubleClickCost = 1500;
+        let currentClicks = 0;
+        let levelClicks = 200; // Clicks needed to level up
+        let level = 1; // Current level
+        let autoClickerSpeed = 1000; // Milliseconds
+        let clickMultiplier = 1;
+        let progressBarSpeed = 2000; // Initial speed in milliseconds
+
+        function clickPizza() {
+            sliceCount += clickMultiplier;
+            currentClicks++;
+            updateDisplay();
+            checkUpgradeStatus();
+            updateProgressBar();
+        }
+
+        function buyAutoClicker() {
+            if (sliceCount >= autoClickerCost) {
+                sliceCount -= autoClickerCost;
+                autoClickers++;
+                autoClickerCost = Math.floor(autoClickerCost * 1.5);
+                document.getElementById("autoClickerMultiplier").innerText = autoClickers * 1; // Update multiplier
+                updateDisplay();
+                checkUpgradeStatus();
+                startAutoClicker(); // Start auto clicker if purchased
+            }
+        }
+
+        function startAutoClicker() {
+            setInterval(() => {
+                sliceCount += clickMultiplier;
+                updateDisplay();
+            }, autoClickerSpeed);
+        }
+
+        function buyPizzeria() {
+            if (sliceCount >= pizzeriaCost) {
+                sliceCount -= pizzeriaCost;
+                pizzeriaCount++;
+                pizzeriaCost = Math.floor(pizzeriaCost * 1.5);
+                document.getElementById("pizzeriaMultiplier").innerText = pizzeriaCount * 1; // Update multiplier
+                updateDisplay();
+                checkUpgradeStatus();
+            }
+        }
+
+        function buyDoubleClick() {
+            if (sliceCount >= doubleClickCost) {
+                sliceCount -= doubleClickCost;
+                doubleClickCount++;
+                doubleClickCost = Math.floor(doubleClickCost * 1.5);
+                clickMultiplier *= 2; // Double click multiplier
+                document.getElementById("doubleClickMultiplier").innerText = doubleClickCount * 1; // Update multiplier
+                updateDisplay();
+                checkUpgradeStatus();
+            }
+        }
+
+        function buyBattleStarSpeedUpgrade() {
+            if (battleStars >= 1) {
+                battleStars--;
+                progressBarSpeed -= 500; // Reduce progress bar speed by 500ms
+                updateDisplay();
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById("sliceCount").innerText = sliceCount;
+            document.getElementById("autoClickerCount").innerText = autoClickers;
+            document.getElementById("pizzeriaCount").innerText = pizzeriaCount;
+            document.getElementById("doubleClickCount").innerText = doubleClickCount;
+            document.getElementById("battleStarCount").innerText = battleStars;
+            document.getElementById("autoClickerCost").innerText = autoClickerCost;
+            document.getElementById("pizzeriaCost").innerText = pizzeriaCost;
+            document.getElementById("doubleClickCost").innerText = doubleClickCost;
+        }
+
+        function checkUpgradeStatus() {
+            document.getElementById("autoClickerDiv").classList.toggle("active", sliceCount >= autoClickerCost);
+            document.getElementById("pizzeriaDiv").classList.toggle("active", sliceCount >= pizzeriaCost);
+            document.getElementById("doubleClickDiv").classList.toggle("active", sliceCount >= doubleClickCost);
+        }
+
+        function updateProgressBar() {
+            const progressBar = document.getElementById("progressBar");
+            const progressPercentage = (currentClicks / levelClicks) * 100;
+            progressBar.style.width = `${progressPercentage}%`;
+            if (currentClicks >= levelClicks) {
+                levelUp();
+            }
+        }
+
+        function levelUp() {
+            level++;
+            currentClicks = 0; // Reset clicks for next level
+            updateProgressBar(); // Reset progress bar
+            battleStars++; // Gain a battle star on level up
+            updateDisplay(); // Update display
+            document.getElementById("celebrationMessage").style.display = "block"; // Show level up message
+            setTimeout(() => {
+                document.getElementById("celebrationMessage").style.display = "none"; // Hide after 3 seconds
+            }, 3000);
+            spawnFloatingPizzas(); // Spawn pizzas on level up
+            levelClicks += 250; // Increase level clicks for next level
+        }
+
+        function spawnFloatingPizzas() {
+            const pizzasToSpawn = 5; // Fixed number of pizzas
+            for (let i = 0; i < pizzasToSpawn; i++) {
+                const pizzaElement = document.createElement("img");
+                pizzaElement.src = "pizza.png"; // Ensure you have a pizza image
+                pizzaElement.classList.add("floating-pizza");
+                document.body.appendChild(pizzaElement);
+
+                // Randomize starting position
+                pizzaElement.style.left = Math.random() * window.innerWidth + 'px';
+                pizzaElement.style.top = '-50px'; // Start off-screen
+                pizzaElement.style.transition = 'transform 2s';
+                setTimeout(() => {
+                    pizzaElement.style.transform = 'translateY(100vh)'; // Move downwards
+                    pizzaElement.addEventListener('click', () => {
+                        sliceCount += 100; // Gain 100 slices for clicking a floating pizza
+                        updateDisplay();
+                        document.body.removeChild(pizzaElement);
+                    });
+                }, 100);
+
+                setTimeout(() => {
+                    document.body.removeChild(pizzaElement); // Remove pizza after 5 seconds
+                }, 5000);
+            }
+        }
+
+        function toggleBattleStarBox() {
+            const box = document.getElementById("battleStarBox");
+            box.style.display = box.style.display === "block" ? "none" : "block";
+        }
+
+        function showTooltip(event, message) {
+            const tooltip = event.currentTarget.querySelector('.tooltip');
+            tooltip.innerText = message;
+            tooltip.style.display = 'block';
+        }
+
+        function hideTooltip() {
+            const tooltips = document.querySelectorAll('.tooltip');
+            tooltips.forEach(tooltip => tooltip.style.display = 'none');
+        }
+    </script>
+</body>
+</html>
